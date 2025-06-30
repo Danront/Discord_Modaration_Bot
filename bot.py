@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 import moderation
 import welcome
+import keepAlive
 
 # Reading of the .env in the folder
 load_dotenv()
@@ -256,6 +257,9 @@ async def warnguy(interaction: discord.Interaction, member: discord.Member):
     await interaction.response.send_message("Ban envoyé !")
     await member.ban(reason="TEST BAN")
     await member.send("Test de BAN !!!")
+
+#keep alive the serve
+keepAlive.keep_alive()
 
 # Loading (running) the bot
 # DISCORD_TOKEN in the .env
