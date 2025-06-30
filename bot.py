@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 
 import re
+import json
+import random
 
 import os
 from dotenv import load_dotenv
@@ -44,9 +46,17 @@ REACTION_ROLES = {
     "📢": "Communicant",
     "👨🏻‍💼": "Bosse"
 }
-
 # ID du message contenant les réactions à surveiller
 TARGET_MESSAGE_ID = 1389159089937977364  # Remplace avec l’ID réel du message
+
+XP_FILE = "xp_data.json"
+LEVEL_ROLES = {
+    5: "Actif",
+    10: "Super Actif",
+    20: "Légende"
+}
+
+XP_FILE = "xp_data.json"
 
 #------------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -79,6 +89,43 @@ async def on_member_join(member):
 async def on_message(msg: discord.Message):
     await moderation.on_send(msg, BLACKLIST, SUSPICIOUS_LINKS, user_message_times)
 
+     # -------- XP SYSTEM --------
+    if msg.guild is None:  # message privé, on ignore
+        return
+    author = msg.author
+    guild_id = str(msg.guild.id)
+    user_id = str(author.id)
+
+    # Initialisation si nouveau serveur ou utilisateur
+    if guild_id not in xp_data:
+        xp_data[guild_id] = {}
+    if user_id not in xp_data[guild_id]:
+        xp_data[guild_id][user_id] = {"xp": 0, "level": 0}
+
+    # Gain d'XP (1 à 5 par message)
+    gained_xp = random.randint(1, 5)
+    xp_data[guild_id][user_id]["xp"] += gained_xp
+    xp = xp_data[guild_id][user_id]["xp"]
+    level = xp_data[guild_id][user_id]["level"]
+
+    # Calcul du niveau (par exemple : 50 XP * niveau)
+    next_level = level + 1
+    required_xp = next_level * 50
+
+    if xp >= required_xp:
+        xp_data[guild_id][user_id]["level"] = next_level
+        await msg.channel.send(f"🎉 Bravo {author.mention}, tu es monté au **niveau {next_level}** !")
+
+        # Donne un rôle s’il correspond à ce niveau
+        role_name = LEVEL_ROLES.get(next_level)
+        if role_name:
+            role = discord.utils.get(msg.guild.roles, name=role_name)
+            if role:
+                await author.add_roles(role)
+                await msg.channel.send(f"🏅 {author.mention} a reçu le rôle **{role_name}** !")
+
+    save_xp_data(xp_data)
+
 #------------------------------------------------------------------------------------------------------------------------------------------#
 
 @bot.event
@@ -86,6 +133,41 @@ async def on_message_edit(before, after):
     await moderation.on_edit(before, after, BLACKLIST, SUSPICIOUS_LINKS)
     
     
+#------------------------------------------------------------------------------------------------------------------------------------------#
+
+def load_xp_data():
+    if os.path.exists(XP_FILE):
+        with open(XP_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_xp_data(data):
+    with open(XP_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+xp_data = load_xp_data()
+save_xp_data(xp_data)
+
+@bot.tree.command(name="niveau", description="Voir ton niveau et ton XP")
+async def niveau(interaction: discord.Interaction):
+    guild_id = str(interaction.guild.id)
+    user_id = str(interaction.user.id)
+
+    if guild_id not in xp_data or user_id not in xp_data[guild_id]:
+        await interaction.response.send_message("Tu n'as pas encore gagné d'XP ! Envoie des messages pour commencer. 🚀", ephemeral=True)
+        return
+
+    user_stats = xp_data[guild_id][user_id]
+    xp = user_stats["xp"]
+    level = user_stats["level"]
+    next_level_xp = (level + 1) * 50
+
+    await interaction.response.send_message(
+        f"🔹 {interaction.user.mention} - Niveau **{level}**\n"
+        f"🔸 XP : {xp} / {next_level_xp}",
+        ephemeral=True
+    )
+
 #------------------------------------------------------------------------------------------------------------------------------------------#
 
 # Interactive role
