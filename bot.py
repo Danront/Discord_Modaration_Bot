@@ -22,24 +22,6 @@ bot = commands.Bot(command_prefix = "!", intents = discord.Intents.all())
 # blacklist for modération
 BLACKLIST = []
 
-def load_blacklist():
-    global BLACKLIST
-    path = "blacklist.txt"
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            BLACKLIST = [line.strip().lower() for line in f if line.strip()]
-        print(f"Blacklist chargée ({len(BLACKLIST)} mots)")
-    else:
-        print("Error : Fichier blacklist.txt introuvable.")
-        BLACKLIST = []
-
-# Regex for detectiong suspected links
-SUSPICIOUS_LINKS = re.compile(r"(https?:\/\/)?(www\.)?(grabify|iplogger|bit\.ly|goo\.gl|discord\.gift\/[^/]+)")
-
-# Anti-spam
-user_message_times = {}
-
-
 REACTION_ROLES = {
     "🎨": "Graphiste",
     "🧑‍🔧": "Développeur",
@@ -63,13 +45,11 @@ XP_FILE = "xp_data.json"
 # On the starting of the bot
 @bot.event
 async def on_ready():
-    load_blacklist()
-    
-    print("Bot is strarted !")
-    
-    # Synchronise the commands with discord
+    global BLACKLIST
+    BLACKLIST = moderation.load_blacklist()
+    print("Bot is started !")
+    # Synchronise les commandes avec discord
     try:
-        # Synchronisation
         synced = await bot.tree.sync()
         print(f"Commandes slash synchronisées : {len(synced)}")
     except Exception as e:
@@ -87,7 +67,7 @@ async def on_member_join(member):
 # Event for reacting to specific messages
 @bot.event
 async def on_message(msg: discord.Message):
-    await moderation.on_send(msg, BLACKLIST, SUSPICIOUS_LINKS, user_message_times)
+    await moderation.on_send(msg, BLACKLIST, moderation.SUSPICIOUS_LINKS, moderation.user_message_times)
 
      # -------- XP SYSTEM --------
     if msg.guild is None:  # message privé, on ignore
@@ -130,7 +110,7 @@ async def on_message(msg: discord.Message):
 
 @bot.event
 async def on_message_edit(before, after):
-    await moderation.on_edit(before, after, BLACKLIST, SUSPICIOUS_LINKS)
+    await moderation.on_edit(before, after, BLACKLIST, moderation.SUSPICIOUS_LINKS)
     
     
 #------------------------------------------------------------------------------------------------------------------------------------------#

@@ -1,8 +1,31 @@
 import asyncio
+import re
+import os
 
 from dotenv import load_dotenv
 
 import moderation
+
+#------------------------------------------------------------------------------------------------------------------------------------------#
+
+def load_blacklist():
+    path = "blacklist.txt"
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            blacklist = [line.strip().lower() for line in f if line.strip()]
+        print(f"Blacklist chargée ({len(blacklist)} mots)")
+    else:
+        print("Error : Fichier blacklist.txt introuvable.")
+        blacklist = []
+    return blacklist
+
+# Regex for detectiong suspected links
+SUSPICIOUS_LINKS = re.compile(r"(https?:\/\/)?(www\.)?(grabify|iplogger|bit\.ly|goo\.gl|discord\.gift\/[^/]+)")
+
+# Anti-spam
+user_message_times = {}
+
+#------------------------------------------------------------------------------------------------------------------------------------------#
 
 async def on_send(msg, BLACKLIST, SUSPICIOUS_LINKS, user_message_times):
     # Disable the capacity of the bots to trigger it self
