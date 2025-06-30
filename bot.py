@@ -37,6 +37,17 @@ SUSPICIOUS_LINKS = re.compile(r"(https?:\/\/)?(www\.)?(grabify|iplogger|bit\.ly|
 # Anti-spam
 user_message_times = {}
 
+
+REACTION_ROLES = {
+    "🎨": "Graphiste",
+    "🧑‍🔧": "Développeur",
+    "📢": "Communicant",
+    "👨🏻‍💼": "Bosse"
+}
+
+# ID du message contenant les réactions à surveiller
+TARGET_MESSAGE_ID = 1389159089937977364  # Remplace avec l’ID réel du message
+
 #------------------------------------------------------------------------------------------------------------------------------------------#
 
 # On the starting of the bot
@@ -75,6 +86,80 @@ async def on_message_edit(before, after):
     await moderation.on_edit(before, after, BLACKLIST, SUSPICIOUS_LINKS)
     
     
+#------------------------------------------------------------------------------------------------------------------------------------------#
+
+# Interactive role
+@bot.tree.command(name="rolesreactifs", description="Crée le message pour les rôles réactifs")
+async def roles_reactifs(interaction: discord.Interaction):
+    global TARGET_MESSAGE_ID
+
+    embed = discord.Embed(
+        title="🎭 Choisissez vos rôles",
+        description="Cliquez sur une réaction pour obtenir un rôle. Cliquez à nouveau pour le retirer.",
+        color=discord.Color.green()
+    )
+
+    for emoji, role in REACTION_ROLES.items():
+        embed.add_field(name=role, value=f"Réagissez avec {emoji}", inline=False)
+
+    msg = await interaction.channel.send(embed=embed)
+    TARGET_MESSAGE_ID = msg.id
+
+    # Ajouter les réactions
+    for emoji in REACTION_ROLES:
+        await msg.add_reaction(emoji)
+
+    await interaction.response.send_message("Message envoyé avec succès !", ephemeral=True)
+
+# Ajout de rôle
+@bot.event
+async def on_raw_reaction_add(payload):
+    if payload.message_id != TARGET_MESSAGE_ID:
+        return
+
+    guild = bot.get_guild(payload.guild_id)
+    if not guild:
+        return
+
+    emoji = str(payload.emoji)
+    role_name = REACTION_ROLES.get(emoji)
+    if not role_name:
+        return
+
+    role = discord.utils.get(guild.roles, name=role_name)
+    member = guild.get_member(payload.user_id)
+
+    if role and member:
+        await member.add_roles(role)
+        print(f"{member.display_name} a reçu le rôle {role.name}")
+
+# Suppression de rôle
+@bot.event
+async def on_raw_reaction_remove(payload):
+    if payload.message_id != TARGET_MESSAGE_ID:
+        return
+
+    guild = bot.get_guild(payload.guild_id)
+    if not guild:
+        return
+
+    emoji = str(payload.emoji)
+    role_name = REACTION_ROLES.get(emoji)
+    if not role_name:
+        return
+
+    role = discord.utils.get(guild.roles, name=role_name)
+    member = guild.get_member(payload.user_id)
+
+    if role and member:
+        await member.remove_roles(role)
+        print(f"{member.display_name} a perdu le rôle {role.name}")
+
+# Démarrage du bot
+@bot.event
+async def setup_hook():
+    await bot.tree.sync()
+
 #------------------------------------------------------------------------------------------------------------------------------------------#
 
 # Event for reacting to commands
