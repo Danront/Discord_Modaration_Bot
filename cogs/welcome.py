@@ -6,7 +6,7 @@ class Welcome(commands.Cog):
         self.bot = bot
 
     async def welcoming_message(self, member, bot):
-        channel = discord.utils.get(member.guild.text_channels, name="général")
+        channel = discord.utils.get(member.guild.text_channels, name="accueil")
         if channel:
             await channel.send(f"👋 Bienvenue {member.mention} sur le serveur !")
 
