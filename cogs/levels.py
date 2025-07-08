@@ -29,14 +29,14 @@ class LevelSystem(commands.Cog):
         if xp >= required:
             self.xp_data[guild_id][user_id]["level"] += 1
             new_level = self.xp_data[guild_id][user_id]["level"]
-            await msg.channel.send(f"🎉 {msg.author.mention}, tu es monté au niveau **{new_level}** !")
+            # await msg.channel.send(f"🎉 {msg.author.mention}, tu es monté au niveau **{new_level}** !")
 
-            role_name = constants.LEVEL_ROLES.get(new_level)
-            if role_name:
-                role = discord.utils.get(msg.guild.roles, name=role_name)
-                if role:
-                    await msg.author.add_roles(role)
-                    await msg.channel.send(f"🏅 Tu as reçu le rôle **{role_name}** !")
+            # role_name = constants.LEVEL_ROLES.get(new_level)
+            # if role_name:
+                # role = discord.utils.get(msg.guild.roles, name=role_name)
+                # if role:
+                    # await msg.author.add_roles(role)
+                    # await msg.channel.send(f"🏅 Tu as reçu le rôle **{role_name}** !")
 
         xp_utils.save_xp_data(self.xp_data)
 

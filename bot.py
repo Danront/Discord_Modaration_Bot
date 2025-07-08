@@ -18,7 +18,10 @@ EXTENSIONS = [
     "cogs.welcome",
     "cogs.levels",
     "cogs.roles",
-    "cogs.commands"
+    "cogs.modCommands",
+    "cogs.surCommands",
+    "cogs.secCommands",
+    "cogs.infCommands"
 ]
 
 @bot.event
