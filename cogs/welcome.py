@@ -9,9 +9,10 @@ class Welcome(commands.Cog):
         channel = discord.utils.get(member.guild.text_channels, name="accueil")
         if channel:
             embed = discord.Embed(
-                title="Bienvenue INTERA-BOT !",
+                title="Bienvenue sur le serveur !",
                 description=(
-                    "Nous sommes ravis de vous compter parmi nous. Voici quelques informations utiles pour bien commencer :"
+                    f"{member.mention}, nous sommes ravis de t'accueillir parmi nous ! 🎉\n\n"
+                    "Voici quelques informations utiles pour bien commencer :"
                 ),
                 color=discord.Color.blue()
             )

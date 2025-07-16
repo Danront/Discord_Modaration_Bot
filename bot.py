@@ -18,12 +18,10 @@ EXTENSIONS = [
     "cogs.welcome",
     "cogs.levels",
     "cogs.roles",
-    "cogs.modCommands",
-    "cogs.surCommands",
-    "cogs.secCommands",
-    "cogs.infCommands"
+    "cogs.commands"
 ]
 
+# Deamrage du bot (quand le bot est pret)
 @bot.event
 async def on_ready():
     print(f"✅ Connecté en tant que {bot.user}")
@@ -33,6 +31,7 @@ async def on_ready():
     except Exception as e:
         print(f"Erreur de sync : {e}")
 
+# Chargement des extentions
 @bot.event
 async def setup_hook():
     for ext in EXTENSIONS:
