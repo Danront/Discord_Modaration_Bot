@@ -1,12 +1,36 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from utils import xp_utils, constants
+
+import random
+import json
+import os
+
+LEVEL_ROLES = {
+    5: "Actif",
+    10: "Super Actif",
+    20: "Membre Actif"
+}
+
+XP_FILE = "json/xp_data.json"
+
+def load_xp_data():
+    if os.path.exists(XP_FILE):
+        with open(XP_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_xp_data(data):
+    with open(XP_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+def gain_xp():
+    return random.randint(1, 5)
 
 class LevelSystem(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.xp_data = xp_utils.load_xp_data()
+        self.xp_data = load_xp_data()
 
     @commands.Cog.listener()
     async def on_message(self, msg: discord.Message):
@@ -19,7 +43,7 @@ class LevelSystem(commands.Cog):
         self.xp_data.setdefault(guild_id, {})
         self.xp_data[guild_id].setdefault(user_id, {"xp": 0, "level": 0})
 
-        gained = xp_utils.gain_xp()
+        gained = gain_xp()
         self.xp_data[guild_id][user_id]["xp"] += gained
 
         xp = self.xp_data[guild_id][user_id]["xp"]
@@ -29,16 +53,16 @@ class LevelSystem(commands.Cog):
         if xp >= required:
             self.xp_data[guild_id][user_id]["level"] += 1
             new_level = self.xp_data[guild_id][user_id]["level"]
-            # await msg.channel.send(f"🎉 {msg.author.mention}, tu es monté au niveau **{new_level}** !")
+            await msg.channel.send(f"🎉 {msg.author.mention}, tu es monté au niveau **{new_level}** !")
 
-            # role_name = constants.LEVEL_ROLES.get(new_level)
-            # if role_name:
-                # role = discord.utils.get(msg.guild.roles, name=role_name)
-                # if role:
-                    # await msg.author.add_roles(role)
-                    # await msg.channel.send(f"🏅 Tu as reçu le rôle **{role_name}** !")
+            role_name = LEVEL_ROLES.get(new_level)
+            if role_name:
+                role = discord.utils.get(msg.guild.roles, name=role_name)
+                if role:
+                    await msg.author.add_roles(role)
+                    await msg.channel.send(f"🏅 Tu as reçu le rôle **{role_name}** !")
 
-        xp_utils.save_xp_data(self.xp_data)
+        save_xp_data(self.xp_data)
 
     @app_commands.command(name="niveau", description="Voir ton niveau et ton XP")
     async def niveau(self, interaction: discord.Interaction):

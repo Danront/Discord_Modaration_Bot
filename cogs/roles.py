@@ -2,10 +2,22 @@ import discord
 from discord.ext import commands
 
 REACTION_ROLES = {
-    "🎨": "Graphiste",
-    "🧑‍🔧": "Développeur",
-    "📢": "Communicant",
-    "👨🏻‍💼": "Bosse"
+    "✍": "Stagiaire",
+    "🙋‍♂️": "Bénévole",
+    
+    "📢": "Finance",
+    "🗣️": "Communication",
+    "🧑‍🤝‍🧑": "RH",
+    "🤝": "Partenariats",
+    "🎓": "Formation",
+    "🤖": "IA",
+    "📁": "Projets",
+    "💙": "HandiSD",
+    "✨": "Fantasia",
+    "🗼": "Antenne Paris",
+    "🌄": "Antenne Montpellier",
+
+    "👤": "Membre DSD" 
 }
 
 TARGET_MESSAGE_ID = 0

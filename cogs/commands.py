@@ -11,8 +11,8 @@ import os
 import json
 
 # FILES REF #
-INFRACTIONS_FILE = "data/infractions.json"
-ANTI_RAID_FILE = "anti_raid.json"
+INFRACTIONS_FILE = "json/infractions.json"
+ANTI_RAID_FILE = "json/anti_raid.json"
 
 # MAIN DEF #
 def load_anti_raid():
