@@ -9,6 +9,7 @@ from discord.ext.commands import CooldownMapping, BucketType
 
 import os
 import json
+import asyncio
 
 # FILES REF #
 INFRACTIONS_FILE = "json/infractions.json"
@@ -266,7 +267,8 @@ class Commands(commands.Cog):
         msg = await interaction.followup.send(f"{len(deleted)} messages supprimés.", ephemeral=True)
 
         # Supprime le message après 5 secondes
-        await msg.delete(delay=5)
+        await asyncio.sleep(5)
+        await msg.delete()
 
     ############
     # SLOWMODE #
