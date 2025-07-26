@@ -317,31 +317,6 @@ class Commands(commands.Cog):
     ############################################################################################################
     # ANALYSE & SURVEILLANCE                                                                                   #
     ############################################################################################################
-    ########
-    # LOGS #
-    ########
-    @app_commands.command(name="logs", description="Voir les derniers logs de modération")
-    async def logs(self, interaction: discord.Interaction):
-        try:
-            with open("mod_logs.txt", "r", encoding="utf-8") as f:
-                lines = f.readlines()
-        except FileNotFoundError:
-            await interaction.response.send_message("Aucun fichier de logs trouvé.", ephemeral=True)
-            return
-        
-        # On garde les 10 dernières lignes max
-        recent_logs = lines[-10:]
-        logs_text = "".join(recent_logs)
-        
-        embed = discord.Embed(title="Derniers logs de modération", color=0x3498db)
-        if logs_text.strip() == "":
-            embed.description = "Aucun log à afficher."
-        else:
-            # Pour que ça rentre bien, on limite à 4000 caractères (max Discord)
-            embed.description = logs_text[:4000]
-        
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
     #################
     # SCAN MESSAGES #
     #################
@@ -367,34 +342,6 @@ class Commands(commands.Cog):
             await interaction.followup.send(f"🔍 Messages contenant **{mot}** :\n{content}", ephemeral=True)
         else:
             await interaction.followup.send(f"Aucun message récent ne contient le mot **{mot}**.", ephemeral=True)
-
-    ##############
-    # CHECK USER #
-    ##############
-    @app_commands.command(name="check_user", description="Voir les infos modération d’un membre.")
-    @app_commands.describe(user="Le membre à examiner")
-    async def check_user(self, interaction: discord.Interaction, user: discord.Member):
-        await interaction.response.defer(ephemeral=True)
-
-        # Récupérer les rôles sauf @everyone
-        roles = [role.mention for role in user.roles if role != interaction.guild.default_role]
-        roles_display = ", ".join(roles) if roles else "Aucun rôle"
-
-        # Récupérer le nombre d'infractions
-        warnings = self.get_user_warnings(user.id, interaction.guild.id)
-
-        # Créer l'embed
-        embed = discord.Embed(
-            title=f"🔎 Infos sur {user.display_name}",
-            color=discord.Color.orange()
-        )
-        embed.set_thumbnail(url=user.display_avatar.url)
-        embed.add_field(name="🆔 ID", value=user.id, inline=True)
-        embed.add_field(name="📅 Arrivé le", value=user.joined_at.strftime('%d/%m/%Y'), inline=True)
-        embed.add_field(name="🏷️ Rôles", value=roles_display, inline=False)
-        embed.set_footer(text=f"Requête faite par {interaction.user}", icon_url=interaction.user.display_avatar.url)
-
-        await interaction.followup.send(embed=embed, ephemeral=True)
 
     def get_user_warnings(self, user_id: int, guild_id: int) -> int:
         if not os.path.exists(INFRACTIONS_FILE):
@@ -482,33 +429,74 @@ class Commands(commands.Cog):
         embed.add_field(name="🔊 Vocaux", value=voice_channels, inline=True)
         embed.add_field(name="🏷️ Rôles", value=roles, inline=True)
 
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    #############
-    # USER INFO #
-    #############
     @app_commands.command(name="userinfo", description="Infos d’un membre (compte, rôles, etc.)")
     @app_commands.describe(user="Le membre à examiner")
     async def user_info(self, interaction: discord.Interaction, user: discord.Member):
-        await interaction.response.defer(ephemeral=False)
+        await interaction.response.defer(ephemeral=True)
 
+        # Récupérer les rôles sauf @everyone
         roles = [role.mention for role in user.roles if role != interaction.guild.default_role]
+        highest_role = user.top_role.mention if user.top_role != interaction.guild.default_role else "Aucun"
+        
+        # Dates
         joined = user.joined_at.strftime('%d/%m/%Y %H:%M') if user.joined_at else "Inconnu"
         created = user.created_at.strftime('%d/%m/%Y %H:%M')
 
+        # Statut et plateforme
+        status_emoji = {
+            discord.Status.online: "🟢 En ligne",
+            discord.Status.idle: "🌙 Inactif",
+            discord.Status.dnd: "⛔ Ne pas déranger",
+            discord.Status.offline: "⚫ Hors ligne"
+        }
+        status = status_emoji.get(user.status, "❔ Inconnu")
+
+        device = ", ".join(client.name for client in user.devices) if hasattr(user, 'devices') else "Inconnu"
+
+        # Vérifie le mute (timeout)
+        is_timed_out = user.timed_out_until is not None and user.timed_out_until > discord.utils.utcnow()
+
+        # Vérifie s'il est bot
+        is_bot = "Oui 🤖" if user.bot else "Non"
+
+        # Simule la récupération des avertissements (ex : depuis fichier JSON)
+        try:
+            with open("json/warnings.json", "r") as f:
+                warns_data = json.load(f)
+
+            guild_id = str(interaction.guild.id)
+            user_id = str(user.id)
+
+            warn_count = len(warns_data.get(guild_id, {}).get(user_id, []))
+
+        except Exception as e:
+            print(f"Erreur lors du chargement des avertissements : {e}")
+            warn_count = 0
+
+
+        # Construction de l'embed
         embed = discord.Embed(
             title=f"📋 Infos sur {user.display_name}",
-            color=discord.Color.blue()
+            color=user.color if user.color.value else discord.Color.blue()
         )
         embed.set_thumbnail(url=user.display_avatar.url)
         embed.add_field(name="🆔 ID", value=user.id, inline=True)
         embed.add_field(name="📛 Nom d'utilisateur", value=str(user), inline=True)
+        embed.add_field(name="🤖 Bot", value=is_bot, inline=True)
         embed.add_field(name="📅 Créé le", value=created, inline=False)
         embed.add_field(name="📥 A rejoint le serveur", value=joined, inline=False)
+        embed.add_field(name="📶 Statut", value=status, inline=True)
+        embed.add_field(name="💻 Plateforme", value=device, inline=True)
+        embed.add_field(name="🔇 Mute (Timeout)", value="Oui" if is_timed_out else "Non", inline=True)
+        embed.add_field(name="⚠️ Avertissements", value=str(warn_count), inline=True)
         embed.add_field(name="🏷️ Rôles", value=", ".join(roles) if roles else "Aucun rôle", inline=False)
+        embed.add_field(name="🔝 Plus haut rôle", value=highest_role, inline=True)
         embed.set_footer(text=f"Requête faite par {interaction.user}", icon_url=interaction.user.display_avatar.url)
 
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
 
     #############
     # ROLE INFO #
@@ -516,7 +504,7 @@ class Commands(commands.Cog):
     @app_commands.command(name="roleinfo", description="Infos sur un rôle spécifique")
     @app_commands.describe(role="Le rôle à examiner")
     async def role_info(self, interaction: discord.Interaction, role: discord.Role):
-        await interaction.response.defer(ephemeral=False)
+        await interaction.response.defer(ephemeral=True)
 
         embed = discord.Embed(
             title=f"📘 Infos sur le rôle : {role.name}",
@@ -531,14 +519,14 @@ class Commands(commands.Cog):
         embed.add_field(name="👥 Nombre de membres", value=str(len(role.members)), inline=False)
         embed.set_footer(text=f"Créé le {role.created_at.strftime('%d/%m/%Y à %H:%M')}")
 
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     ################
     # CHANNEL INFO #
     ################
     @app_commands.command(name="channelinfo", description="Infos sur le salon actuel")
     async def channel_info(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=False)
+        await interaction.response.defer(ephemeral=True)
 
         channel = interaction.channel
 
@@ -552,73 +540,7 @@ class Commands(commands.Cog):
         embed.add_field(name="🔒 Salon privé", value="Oui" if isinstance(channel, discord.TextChannel) and not channel.permissions_for(channel.guild.default_role).read_messages else "Non", inline=True)
         embed.set_footer(text=f"Créé le {channel.created_at.strftime('%d/%m/%Y à %H:%M')}")
 
-        await interaction.followup.send(embed=embed)
-
-    ########
-    # HELP #
-    ########
-    @app_commands.command(name="help", description="Afficher la liste des commandes disponibles")
-    async def help(self, interaction: discord.Interaction):
-        embed = discord.Embed(
-            title="📘 Commandes disponibles",
-            description="Voici les commandes triées par catégorie.",
-            color=discord.Color.blurple()
-        )
-
-        embed.add_field(
-            name="🛡️ Modération Générale",
-            value=(
-                "/ban @user [raison] - Bannir un membre du serveur\n"
-                "/unban user_id - Débannir un membre\n"
-                "/kick @user [raison] - Expulser un membre\n"
-                "/mute @user [durée] - Rendre muet un membre (timeout ou rôle)\n"
-                "/unmute @user - Enlever le mute\n"
-                "/warn @user [raison] - Avertir un membre\n"
-                "/warnings @user - Afficher les avertissements d’un membre\n"
-                "/clear [nombre] - Supprimer un certain nombre de messages\n"
-                "/slowmode [secondes] - Activer/désactiver le mode lent d’un salon\n"
-                "/lock - Fermer un salon textuel\n"
-                "/unlock - Rouvrir un salon textuel\n"
-            ),
-            inline=False
-        )
-
-        embed.add_field(
-            name="ℹ️ Analyse & Surveillance",
-            value=(
-                "/logs - Voir les derniers logs de modération\n"
-                "/scan_messages [mot] - Scanner les messages récents contenant un mot\n"
-                "/check_user @user - Infos sur un membre (rôles, infractions, etc.)\n"
-                "/ping_check - Vérifier la latence du bot\n"
-            ),
-            inline=False
-        )
-
-        embed.add_field(
-            name="🛡️ Sécurité",
-            value=(
-                "/antiraid on|off - Activer ou désactiver la protection anti-raid\n"
-                "/blacklist add [mot] - Ajouter un mot à la liste noire\n"
-                "/blacklist remove [mot] - Retirer un mot de la liste noire\n"
-                "/blacklist list - Afficher tous les mots interdits\n"
-                "/antispam on|off - Activer ou désactiver le filtre anti-spam\n"
-                "/suspicious_links on|off - Bloquer ou autoriser les liens suspects"
-            ),
-            inline=False
-        )
-
-        embed.add_field(
-            name="❓ Informations",
-            value=(
-                "/serverinfo - Infos générales sur le serveur\n"
-                "/userinfo @user - Infos d’un membre (compte, rôles, etc.)\n"
-                "/roleinfo @role - Infos sur un rôle spécifique\n"
-                "/channelinfo - Infos sur le salon actuel"
-            ),
-            inline=False
-        )
-
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(Commands(bot))

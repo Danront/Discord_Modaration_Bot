@@ -2,14 +2,20 @@ import discord
 from discord.ext import commands
 
 class AcceptRulesView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)  # Pas de timeout pour que le bouton reste dispo
+    def __init__(self, member_id: int):
+        super().__init__(timeout=None)
+        self.member_id = member_id  # ID du membre autorisé
 
     @discord.ui.button(label="✅ J'accepte les conditions", style=discord.ButtonStyle.success, custom_id="accept_rules")
     async def accept_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         member = interaction.user
-        guild = interaction.guild
 
+        # Vérifie que seul le bon membre peut cliquer
+        if member.id != self.member_id:
+            await interaction.response.send_message("❌ Ce bouton ne t’est pas destiné !", ephemeral=True)
+            return
+
+        guild = interaction.guild
         role_new = discord.utils.get(guild.roles, name="Nouvel Arrivant")
         role_member = discord.utils.get(guild.roles, name="Membre")
 
@@ -19,10 +25,13 @@ class AcceptRulesView(discord.ui.View):
         if role_member not in member.roles:
             await member.add_roles(role_member, reason="Conditions acceptées")
 
-        button.disabled = True  # Désactive le bouton après clic
+        button.disabled = True
         await interaction.message.edit(view=self)
 
-        await interaction.response.send_message("Merci d'avoir accepté les conditions ! Tu as maintenant accès au serveur.", ephemeral=True)
+        await interaction.response.send_message(
+            "✅ Merci d'avoir accepté les conditions ! Tu as maintenant accès au serveur.",
+            ephemeral=True
+        )
 
 class Welcome(commands.Cog):
     def __init__(self, bot):
@@ -32,43 +41,54 @@ class Welcome(commands.Cog):
         channel = discord.utils.get(member.guild.text_channels, name="accueil")
         if channel:
             embed = discord.Embed(
-                title="Bienvenue sur le serveur !",
+                title=f"👋 Bienvenue sur {member.guild.name} !",
                 description=(
-                    f"{member.mention}, nous sommes ravis de t'accueillir parmi nous ! 🎉\n\n"
-                    "Voici quelques informations utiles pour bien commencer :"
+                    f"Salut {member.mention} ! Nous sommes ravis de t'accueillir parmi nous. 🎉\n\n"
+                    "Pour bien démarrer, voici quelques infos essentielles 👇"
                 ),
-                color=discord.Color.blue()
+                color=discord.Color.blurple()
             )
 
-            embed.add_field(
-                name="À propos de l'association",
-                value="Notre association a pour but de [décrire brièvement la mission de l'association].",
-                inline=False
-            )
-            embed.add_field(
-                name="Activités à venir",
-                value=(
-                    "- [Activité 1] : [Date et description]\n"
-                    "- [Activité 2] : [Date et description]\n"
-                    "- [Activité 3] : [Date et description]"
-                ),
-                inline=False
-            )
-            embed.add_field(
-                name="Règles du serveur à lire avec ses 2 yeux 👀",
-                value=(
-                    "- Respectez tous les membres.\n"
-                    "- Pas de spam ou de publicité non autorisée.\n"
-                    "- Utilisez les canaux appropriés pour vos messages.\n"
-                    "- S'amuser\n"
-                    "- [Ajoutez d'autres règles spécifiques à votre serveur]"
-                ),
-                inline=False
-            )
-            embed.set_footer(text="Bonne journée et amusez-vous bien ! 😊")
             embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
 
-            view = AcceptRulesView()
+            embed.add_field(
+                name="📌 À faire dès maintenant",
+                value=(
+                    "• Lire attentivement les règles 📖\n"
+                    "• Cliquer sur le bouton en bas pour accepter les règles ✅\n"
+                    "• Fait le choix de ton role dans <#Salon> 🎭\n"
+                    "• Se présenter dans <#Salon> 🙋‍♂️ (facultatif mais apprécié)\n"
+                    "• Explorer les salons disponibles selon tes intérêts 🔍"
+                ),
+                inline=False
+            )
+
+            embed.add_field(
+            name="ℹ️ À propos de l'association",
+            value=(
+                "Notre objectif est de sensibiliser à la surconsommation (alimentaire, vestimentaire, énergétique, etc.) "
+                "pour contribuer à un avenir durable et harmonieux.\n"
+                "Nous agissons sur les trois piliers du développement durable : social, économique et écologique, "
+                "en organisant des événements, en soutenant les populations vulnérables, "
+                "en encourageant les pratiques responsables, et en promouvant des alternatives écologiques."
+            ),
+            inline=False
+            )
+
+            embed.add_field(
+                name="📜 Règles du serveur",
+                value=(
+                    "• 🤝 Respect et bienveillance entre membres\n"
+                    "• 🚫 Pas de spam, insultes ou pub non autorisée\n"
+                    "• 🧭 Restez dans les bons salons\n"
+                    "• 🎉 Amusez-vous bien !"
+                ),
+                inline=False
+            )
+
+            embed.set_footer(text="L’équipe de modération est là si tu as besoin d’aide ! ❤️")
+
+            view = AcceptRulesView(member.id)
             await channel.send(embed=embed, view=view)
 
     @commands.Cog.listener()
