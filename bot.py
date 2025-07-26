@@ -18,7 +18,8 @@ EXTENSIONS = [
     "cogs.welcome",
     "cogs.levels",
     "cogs.roles",
-    "cogs.commands"
+    "cogs.commands",
+    "cogs.help"
 ]
 
 # Deamrage du bot (quand le bot est pret)
