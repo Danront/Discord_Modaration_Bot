@@ -227,7 +227,7 @@ class Moderation(commands.Cog):
     # TOGGLE COMMANDS #
     ###################
 
-    @app_commands.command(name="antispam", description="Enable or disable the anti-spam filter")
+    @app_commands.command(name="anti_spam", description="Enable or disable the anti-spam filter")
     @app_commands.describe(state="Desired state: on or off")
     async def toggle_antispam(self, interaction: discord.Interaction, state: str):
         """
@@ -242,7 +242,7 @@ class Moderation(commands.Cog):
         status = "✅ Enabled" if self.antispam_enabled else "⛔ Disabled"
         await interaction.response.send_message(f"🛡️ Anti-spam: {status}", ephemeral=True)
 
-    @app_commands.command(name="suspicious_links", description="Enable or disable suspicious link filtering")
+    @app_commands.command(name="anti_suspicious_links", description="Enable or disable suspicious link filtering")
     @app_commands.describe(state="Desired state: on or off")
     async def toggle_suspicious_links(self, interaction: discord.Interaction, state: str):
         """

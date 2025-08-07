@@ -38,7 +38,7 @@ class Welcome(commands.Cog):
         self.bot = bot
 
     async def welcoming_message(self, member):
-        channel = discord.utils.get(member.guild.text_channels, name="accueil")
+        channel = discord.utils.get(member.guild.text_channels, name="👋-accueil")
         if channel:
             embed = discord.Embed(
                 title=f"👋 Bienvenue sur {member.guild.name} !",
@@ -56,7 +56,7 @@ class Welcome(commands.Cog):
                 value=(
                     "• Lire attentivement les règles 📖\n"
                     "• Cliquer sur le bouton en bas pour accepter les règles ✅\n"
-                    "• Fait le choix de ton role dans <#Salon> 🎭\n"
+                    "• Fait le choix de ton role dans <#📝-rôles-salons> 🎭\n"
                     "• Se présenter dans <#Salon> 🙋‍♂️ (facultatif mais apprécié)\n"
                     "• Explorer les salons disponibles selon tes intérêts 🔍"
                 ),

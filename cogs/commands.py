@@ -35,15 +35,8 @@ class Commands(commands.Cog):
 
 
     ############################################################################################################
-    # MODERATION                                                                                                #
+    # MODERATION                                                                                               #
     ############################################################################################################
-    ########
-    # PING #
-    ########
-    @app_commands.command(name="ping", description="Latency test")
-    async def ping(self, interaction: discord.Interaction):
-        await interaction.response.send_message("🏓 Pong!")
-
     #######
     # BAN #
     #######
@@ -151,6 +144,10 @@ class Commands(commands.Cog):
     @app_commands.command(name="unmute", description="Remove the mute from a member.")
     @app_commands.describe(member="The member to unmute")
     async def unmute(self, interaction: discord.Interaction, member: discord.Member):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ You must be an administrator to use this command.", ephemeral=True)
+            return
+
         try:
             await member.timeout(None)
             await interaction.response.send_message(f"{member.mention} has been unmuted.", ephemeral=True)
@@ -209,9 +206,9 @@ class Commands(commands.Cog):
         )
     
 
-    ###########
+    ############
     # WARNINGS #
-    ###########
+    ############
     @app_commands.command(name="warnings", description="View the warnings of a member.")
     @app_commands.describe(member="The member to check")
     @commands.has_permissions(manage_messages=True)
@@ -253,12 +250,16 @@ class Commands(commands.Cog):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-        #########
+    #########
     # CLEAR #
     #########
     @app_commands.command(name="clear", description="Delete a certain number of messages")
     @app_commands.describe(amount="Number of messages to delete")
     async def clear(self, interaction: discord.Interaction, amount: int):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ You must be an administrator to use this command.", ephemeral=True)
+            return
+
         await interaction.response.defer(ephemeral=True)
 
         deleted = await interaction.channel.purge(limit=amount + 1)
@@ -277,6 +278,10 @@ class Commands(commands.Cog):
     @app_commands.describe(delay="Time in seconds (0 to disable)")
     @commands.has_permissions(manage_channels=True)
     async def slowmode(self, interaction: discord.Interaction, delay: int):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ You must be an administrator to use this command.", ephemeral=True)
+            return
+
         try:
             await interaction.channel.edit(slowmode_delay=delay)
             if delay == 0:
@@ -292,6 +297,10 @@ class Commands(commands.Cog):
     @app_commands.command(name="lock", description="Lock this channel for members.")
     @commands.has_permissions(manage_channels=True)
     async def lock(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ You must be an administrator to use this command.", ephemeral=True)
+            return
+
         try:
             overwrite = interaction.channel.overwrites_for(interaction.guild.default_role)
             overwrite.send_messages = False
@@ -306,6 +315,10 @@ class Commands(commands.Cog):
     @app_commands.command(name="unlock", description="Unlock this channel for members.")
     @commands.has_permissions(manage_channels=True)
     async def unlock(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ You must be an administrator to use this command.", ephemeral=True)
+            return
+
         try:
             overwrite = interaction.channel.overwrites_for(interaction.guild.default_role)
             overwrite.send_messages = True
@@ -323,11 +336,6 @@ class Commands(commands.Cog):
     @app_commands.command(name="scan_messages", description="Scan recent messages containing a word.")
     @app_commands.describe(word="Word or phrase to search for in messages")
     async def scan_messages(self, interaction: discord.Interaction, word: str):
-        # Permission check
-        if not interaction.user.guild_permissions.manage_messages:
-            await interaction.response.send_message("❌ You do not have permission to use this command.", ephemeral=True)
-            return
-
         await interaction.response.defer(ephemeral=True)  # To avoid timeout (shows "thinking...")
 
         channel = interaction.channel
@@ -371,7 +379,7 @@ class Commands(commands.Cog):
     ############
     # ANTIRAID #
     ############
-    @app_commands.command(name="antiraid", description="Enable or disable anti-raid protection.")
+    @app_commands.command(name="anti_raid", description="Enable or disable anti-raid protection.")
     @app_commands.describe(mode="on or off to manage anti-raid protection.")
     async def antiraid(self, interaction: discord.Interaction, mode: str):
         if not interaction.user.guild_permissions.administrator:
@@ -403,8 +411,12 @@ class Commands(commands.Cog):
     ###############
     # SERVER INFO #
     ###############
-    @app_commands.command(name="serverinfo", description="Display general server information")
+    @app_commands.command(name="server_info", description="Display general server information")
     async def server_info(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ You must be an administrator to use this command.", ephemeral=True)
+            return
+        
         guild = interaction.guild
         owner = guild.owner or await guild.fetch_owner()
         created_at = guild.created_at.strftime('%d/%m/%Y')
@@ -431,11 +443,15 @@ class Commands(commands.Cog):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name="userinfo", description="Information about a member (account, roles, etc.)")
+    @app_commands.command(name="user_info", description="Information about a member (account, roles, etc.)")
     @app_commands.describe(user="The member to examine")
     async def user_info(self, interaction: discord.Interaction, user: discord.Member):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ You must be an administrator to use this command.", ephemeral=True)
+            return
+
         await interaction.response.defer(ephemeral=True)
-        
+
         roles = [role.mention for role in user.roles if role != interaction.guild.default_role]
         highest_role = user.top_role.mention if user.top_role != interaction.guild.default_role else "None"
 
@@ -489,9 +505,13 @@ class Commands(commands.Cog):
     #############
     # ROLE INFO #
     #############
-    @app_commands.command(name="roleinfo", description="Information about a specific role")
+    @app_commands.command(name="role_info", description="Information about a specific role")
     @app_commands.describe(role="The role to examine")
     async def role_info(self, interaction: discord.Interaction, role: discord.Role):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ You must be an administrator to use this command.", ephemeral=True)
+            return
+        
         await interaction.response.defer(ephemeral=True)
 
         embed = discord.Embed(
@@ -512,8 +532,12 @@ class Commands(commands.Cog):
     ################
     # CHANNEL INFO #
     ################
-    @app_commands.command(name="channelinfo", description="Information about the current channel")
+    @app_commands.command(name="channel_info", description="Information about the current channel")
     async def channel_info(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ You must be an administrator to use this command.", ephemeral=True)
+            return
+        
         await interaction.response.defer(ephemeral=True)
 
         channel = interaction.channel

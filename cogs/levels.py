@@ -11,9 +11,9 @@ import os
 import time  # for timestamps
 
 LEVEL_ROLES = {
-    5: "Active",
-    10: "Super Active",
-    20: "Active Member"
+    10: "Medaille de bronze",
+    40: "Medaille d'argent",
+    60: "Medaille d'or"
 }
 
 XP_FILE = "json/xp_data.json"
@@ -29,7 +29,7 @@ def save_xp_data(data):
         json.dump(data, f, indent=4)
 
 def gain_xp():
-    return random.randint(1, 5)
+    return random.randint(0, 1)
 
 class LevelSystem(commands.Cog):
     def __init__(self, bot):
@@ -94,7 +94,7 @@ class LevelSystem(commands.Cog):
                         self.xp_data[guild_id][user_id]["level"] += 1
                         new_level = self.xp_data[guild_id][user_id]["level"]
 
-                        channel = discord.utils.get(guild.text_channels, name="général")
+                        channel = discord.utils.get(guild.text_channels, name="💬-général")
                         if channel is None:
                             # fallback : premier channel où on peut écrire
                             for ch in guild.text_channels:
